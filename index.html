@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>projectile-motion</title>
+    <style>
+      .controlers {
+        display: flex;
+        flex-direction: row;
+        justify-content: space-evenly;
+        justify-items: center;
+        background-color: aquamarine;
+      }
+      .controlers input[type="number"] {
+        margin: 0 auto;
+        margin: 10px;
+        min-height: 40px;
+        font-weight: 800;
+        border-radius: 20px;
+        text-align: center;
+      }
+
+      .bottom {
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .actions {
+        min-height: 50px;
+        margin-top: 5px;
+        display: flex;
+        flex-direction: row;
+        justify-content: center;
+        justify-items: center;
+        flex: 1;
+      }
+
+      .actions button {
+        padding: 10px;
+        margin: 20px;
+        background-color: aquamarine;
+        color: black;
+        font-weight: 800;
+        cursor: pointer;
+        min-width: 30%;
+      }
+
+      .results {
+        flex: 2;
+        min-height: 100%;
+      }
+
+      .projection_motion {
+        min-width: 80vw;
+        margin: 0 auto;
+        position: relative;
+        height: 75vh;
+        max-width: 100vw;
+      }
+
+      #canvas {
+        border: 1px solid black;
+      }
+
+      .canvas {
+        padding-left: 0;
+        padding-right: 0;
+        margin: 0 auto;
+        display: block;
+        border: 2px solid black;
+      }
+
+      table,
+      th,
+      td {
+        width: 50%;
+        border-bottom: 1pt solid black;
+        border-right: 2px solid red;
+        text-align: center;
+      }
+
+      table {
+        border: 1px solid black;
+        width: 100%;
+      }
+    </style>
+    <script type="text/javascript">
+      window.addEventListener("DOMContentLoaded", () => {
+        console.log("Progress Start");
+
+        const GRAVITY = 9.8;
+        const VELOCITY = document.getElementById("velocity");
+        const ANGLE = document.getElementById("angle");
+        const reset_button = document.getElementById("reset");
+        const launch_button = document.getElementById("launch");
+        let velocity_value = parseInt(VELOCITY.value);
+        let angle_value = parseInt(ANGLE.value);
+        let GloablTimeStamp = 0;
+        let maxDistance =
+          (Math.pow(velocity_value, 2) *
+            Math.sin((2 * angle_value * Math.PI) / 180)) /
+          GRAVITY;
+        let max_height =
+          (velocity_value *
+            velocity_value *
+            Math.sin((angle_value * Math.PI) / 180) *
+            Math.sin((angle_value * Math.PI) / 180)) /
+          (2 * GRAVITY);
+
+        let flightDuration =
+          (2 * velocity_value * Math.sin((angle_value * Math.PI) / 180)) /
+          GRAVITY;
+
+        let canvas = document.getElementById("canvas");
+        let drawing = canvas.getContext("2d");
+        function fitToContainer(canvas) {
+          // Make it visually fill the positioned parent
+          canvas.style.height = "100%";
+          canvas.style.width =
+            maxDistance > screen.width ? `${maxDistance + 200}px` : "100%";
+          // ...then set the internal size to match
+          canvas.width = canvas.offsetWidth;
+          canvas.height = canvas.offsetHeight;
+          //--increase groundPoint so ball stick
+          var ground = canvas.height - 20;
+
+          for (var i = 1; i < canvas.width; i += 20) {
+            drawing.moveTo(i, 0);
+            drawing.lineTo(i, canvas.height - 20);
+          }
+
+          for (var z = 1; z < canvas.height - 20; z += 20) {
+            drawing.moveTo(20, z);
+            drawing.lineTo(canvas.width, z);
+          }
+          drawing.strokeStyle = "rgba(0,0,0,.8)";
+          drawing.stroke();
+          //Grid Area
+          drawing.fillStyle = "rgba(0,0,122,0.2)";
+          drawing.fillRect(0, 0, canvas.width, ground);
+          // Axis Lines
+          drawing.beginPath();
+          drawing.moveTo(0, ground);
+          drawing.lineTo(canvas.clientWidth, ground);
+          drawing.strokeStyle = "rgba(0,100,50,1)";
+          drawing.stroke();
+          drawing.fillStyle = "rgba(0,200,100,1)";
+          drawing.fillRect(0, ground, canvas.clientWidth + 250, canvas.height);
+          drawing.fillStyle = "rgba(0,200,100,1)";
+          drawing.fillRect(0, canvas.height - 555, 20, canvas.clientHeight);
+        }
+        fitToContainer(canvas);
+        let T = 0;
+        let X0 = 20;
+        let Y0 = canvas.height - 20;
+        let x = X0;
+        let y = Y0;
+        let g = 9.81;
+        let oldTimeStamp = 0;
+        let secondPassed = 0;
+        let animationSpeed = 10;
+
+        function calcInfo() {
+          maxDistance =
+            (Math.pow(velocity_value, 2) *
+              Math.sin((2 * angle_value * Math.PI) / 180)) /
+            GRAVITY;
+
+          //-----------------
+          max_height =
+            (velocity_value *
+              velocity_value *
+              Math.sin((angle_value * Math.PI) / 180) *
+              Math.sin((angle_value * Math.PI) / 180)) /
+            (2 * GRAVITY);
+
+          //-----------------
+          flightDuration =
+            (2 * velocity_value * Math.sin((angle_value * Math.PI) / 180)) /
+            GRAVITY;
+        }
+
+        function showResults() {
+          document.getElementById("maxHeightValue").innerHTML = max_height;
+          document.getElementById("rangeValue").innerHTML = maxDistance;
+          document.getElementById("flightDuration").innerHTML = flightDuration;
+        }
+
+        VELOCITY.addEventListener("change", () => {
+          velocity_value = VELOCITY.value;
+          calcInfo();
+        });
+        ANGLE.addEventListener("change", () => {
+          angle_value = ANGLE.value;
+          calcInfo();
+        });
+
+        launch_button.addEventListener("click", ({ timeStamp }) => {
+          showResults();
+          fitToContainer(canvas);
+          GloablTimeStamp = timeStamp;
+          requestAnimationFrame(animationLoop);
+        });
+        reset_button.addEventListener("click", () => {
+          location.reload();
+        });
+
+        function animationLoop(timeStamp) {
+          secondPassed = (timeStamp - GloablTimeStamp - oldTimeStamp) / 80000;
+          oldTimeStamp = secondPassed;
+          update();
+          draw();
+
+          if (y > canvas.height - 19) {
+            console.log("STOP");
+            draw();
+            return;
+          }
+
+          requestAnimationFrame(animationLoop);
+        }
+
+        function update() {
+          T += animationSpeed * secondPassed;
+          x =
+            velocity_value * Math.cos((-angle_value * Math.PI) / 180) * T + X0;
+          y =
+            0.5 * g * T * T +
+            velocity_value * Math.sin((-angle_value * Math.PI) / 180) * T +
+            Y0;
+        }
+
+        function draw() {
+          drawing.beginPath();
+          drawing.arc(x, y, 10, 0, 2 * Math.PI);
+          drawing.closePath();
+          drawing.fillStyle = "black";
+          drawing.fill();
+          drawing.strokeStyle = "red";
+          drawing.stroke();
+        }
+
+        function showCoords(event) {
+          var xloc = event.clientX - 10;
+          var yloc = event.clientY - 10;
+          var coords = "X coordinates: " + xloc + ", Y coordinates: " + yloc;
+          document.getElementById("showCoords").innerHTML = coords;
+        }
+      });
+    </script>
+  </head>
+  <body>
+    <p id="showCoords"></p>
+    <div class="projection_motion">
+      <canvas id="canvas" onclick="showCoords(event)" class="canvas"></canvas>
+    </div>
+
+    <div class="controlers">
+      <div>
+        <label for="initial_velocity">initial velocity </label>
+        <input
+          type="number"
+          name="initial_velocity"
+          placeholder="velocity"
+          value="70"
+          id="velocity"
+        />
+      </div>
+      <div>
+        <label for="projection_angle">projection angle </label>
+        <input
+          type="number"
+          name="projection_angle"
+          value="45"
+          placeholder="angle"
+          id="angle"
+        />
+      </div>
+    </div>
+    <div class="bottom">
+      <div class="actions">
+        <button id="launch">Launch</button>
+        <button id="reset">Reset</button>
+      </div>
+      <div class="results">
+        <table>
+          <tr>
+            <th>Parameter</th>
+            <th>Value</th>
+          </tr>
+
+          <tr>
+            <td>Max-Height</td>
+            <td id="maxHeightValue">-</td>
+          </tr>
+
+          <tr>
+            <td>Range</td>
+            <td id="rangeValue">-</td>
+          </tr>
+
+          <tr>
+            <td>Flight Duration</td>
+            <td id="flightDuration">-</td>
+          </tr>
+        </table>
+      </div>
+    </div>
+  </body>
+</html>
